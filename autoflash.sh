@@ -9,6 +9,7 @@ set -e
 CODE_NAME="bullhead"
 ARCH="arm64"
 GAPPS_FLAV="8.1-pico"
+LOS="15.1"
 
 # Paths
 
@@ -89,7 +90,7 @@ log() {
 # Stuff to get updates
 
 latest_image() {
-  curl -s "https://download.lineageos.org/api/v1/$CODE_NAME/nightly/1" | jq -c ".response[] | [ .datetime, .filename, .url ]" | sort -r | jq -sc ".[0][2]" | sed "s|\"||g"
+  curl -s "https://download.lineageos.org/api/v1/$CODE_NAME/nightly/1?version=$LOS" | jq -c ".response[] | [ .datetime, .filename, .url ]" | sort -r | jq -sc ".[0][2]" | sed "s|\"||g"
 }
 
 latest_gapps() {
@@ -97,7 +98,7 @@ latest_gapps() {
 }
 
 latest_addonsu() {
-  echo "https://mirrorbits.lineageos.org/su/addonsu-15.1-$ARCH-signed.zip"
+  echo "https://mirrorbits.lineageos.org/su/addonsu-$LOS-$ARCH-signed.zip"
 }
 
 latest_fdroid() {
