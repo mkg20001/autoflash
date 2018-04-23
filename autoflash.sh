@@ -102,7 +102,7 @@ latest_addonsu() {
 }
 
 latest_fdroid() {
-  echo "https://f-droid.org/repo/org.fdroid.fdroid.privileged.ota_2070.zip" # from https://f-droid.org/packages/org.fdroid.fdroid.privileged.ota/
+  curl -s https://f-droid.org/packages/org.fdroid.fdroid.privileged.ota/ | grep -o "https.*.zip" | sort -r | head -n 1
 }
 
 latest_factory() {
