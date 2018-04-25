@@ -16,6 +16,7 @@ DATA="$HOME/.autoflash"
 CONF="$DATA/config"
 DEV_CONF="$PWD/$DEVICE.conf"
 DEV_PRIV_CONF="$DATA/$DEVICE.conf"
+PACK_LOCK="/tmp/.AUTOFLASH_PACK_LOCK"
 
 # Load conf
 
@@ -210,6 +211,37 @@ extract_backup() {
   _sh rm -rf "$BACKUPS_LOC"
 }
 
+pack_dir() {
+  nice -n100 ionice -c3 tar cf "$1.tar.gz" "$1" -I pigz
+  nice -n100 ionice -c3 rm -rf "$1"
+}
+
+pack_task() {
+  dir="$1"
+  pushd "$dir"
+  for dir in $(dir); do
+    if [ -d "$dir" ]; then
+      pack_dir "$dir"
+    fi
+  done
+  popd
+}
+
+pack_all() {
+  if [ -e "$PACK_LOCK" ]; then
+    if [ -e "/proc/$(cat $PACK_LOCK)" ]; then
+      echo "Will not pack backups: Packing currently locked!" 1>&2
+      return
+    fi
+  fi
+  echo "$$" > "$PACK_LOCK"
+  while [ ! -z "$1" ]; do
+    pack_task "$1"
+    shift
+  done
+  rm "$PACK_LOCK"
+}
+
 # And finally: the actual actions
 
 action_unlock() {
@@ -221,6 +253,9 @@ action_backup() {
   log "Backing up..."
   twrp backup D "$(date +%s)"
   extract_backup
+  log "Packing backups in background..."
+  pack_all "$BACKUPS_STORE/$(dir $BACKUPS_STORE)"  & #> /dev/null &
+  log "Started"
 }
 
 action_vendor() {
@@ -334,3 +369,5 @@ adb reboot bootloader
 action_vendor
 # Reboot and enjoy
 fastboot reboot
+
+log "DONE!"
