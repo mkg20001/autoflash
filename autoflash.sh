@@ -4,40 +4,43 @@
 
 set -e
 
-# Device settings
+die() {
+  echo "$*" 1>&2 && exit 2
+}
 
-CODE_NAME="bullhead"
-ARCH="arm64"
-GAPPS_FLAV="8.1-pico"
-LOS="15.1"
+[ -z "$DEVICE" ] && die "Set the \$DEVICE env variable"
 
 # Paths
 
 DATA="$HOME/.autoflash"
 CONF="$DATA/config"
-BACKUPS_STORE="$HOME/backups/$CODE_NAME"
-DL_STORE="$DATA/dl/$CODE_NAME"
-FLASH_TMP="/sdcard/flash_tmp"
-VARS="$DATA/$CODE_NAME.vars"
-
-# Device paths
-
-BACKUPS_LOC="/data/media/0/TWRP/BACKUPS"
+DEV_CONF="$PWD/$DEVICE.conf"
+DEV_PRIV_CONF="$DATA/$DEVICE.conf"
 
 # Load conf
 
 mkdir -p "$DATA"
 touch "$CONF"
 . "$CONF"
+[ ! -e "$DEV_CONF" ] && touch "$DEV_CONF" && die "Edit $DEV_CONF"
+. "$DEV_CONF"
+[ ! -e "$DEV_PRIV_CONF" ] && touch "$DEV_PRIV_CONF" && die "Edit $DEV_PRIV_CONF"
+. "$DEV_PRIV_CONF"
+
+BACKUPS_STORE="$HOME/backups/$CODE_NAME"
+DL_STORE="$DATA/dl/$CODE_NAME"
+FLASH_TMP="/sdcard/flash_tmp"
+VARS="$DATA/$CODE_NAME.vars"
+
 touch "$VARS"
+
+# Device paths
+
+BACKUPS_LOC="/data/media/0/TWRP/BACKUPS"
 
 # Preflight check
 
-die() {
-  echo "$*" 1>&2 && exit 2
-}
-
-[ -z "$PASSPHRASE" ] && die "\$PASSPHRASE missing! Add it to $CONF!"
+[ -z "$PASSPHRASE" ] && echo "\$PASSPHRASE missing! Add it to $DEV_PRIV_CONF if needed!"
 which adb > /dev/null || die "No ADB binary found"
 which fastboot > /dev/null || die "No fastboot binary found"
 
@@ -235,7 +238,9 @@ action_vendor() {
     pushd "$TT"
     bash -ex flash-base.sh
     unzip "$(dir -w 1 | grep 'image*')" -x system.img
-    fastboot flash vendor vendor.img
+    if [ -e "vendor.img" ]; then
+      fastboot flash vendor vendor.img
+    fi
     popd
     popd
     rm -rf "$TMP"
@@ -261,6 +266,14 @@ action_flash() {
     twrp wipe cache
     twrp wipe dalvik
 
+    if [ ! -z "$GAPPS_CONF" ]; then
+      log "Writing custom gapps config..."
+      GCONF="/tmp/$$.gapps-conf"
+      echo -e "$GAPPS_CONF" > "$GCONF"
+      adb push "$GCONF" "$FLASH_TMP/.gapps-config"
+      rm "$GCONF"
+    fi
+
     for t in $THINGS; do
       log "Flash $t..."
       URL=$(_get "$t-url")
@@ -272,6 +285,15 @@ action_flash() {
 
     twrp wipe cache
     twrp wipe dalvik
+
+    if [ ! -z "$WIPE_FLASH_TMP" ]; then
+      log "Clean up $FLASH_TMP..."
+      for t in $THINGS; do
+        URL=$(_get "$t-url")
+        F=$(basename "$URL")
+        _cmd rm "$FLASH_TMP/$F"
+      done
+    fi
   fi
 }
 
@@ -279,7 +301,9 @@ action_flash() {
 
 # Check for updates
 update_prepare los latest_image
-update_prepare su latest_addonsu
+if [ "$ARCH" != "x86" ]; then
+  update_prepare su latest_addonsu
+fi
 update_prepare fdroid latest_fdroid
 update_prepare gapps latest_gapps
 
@@ -292,8 +316,11 @@ adb reboot recovery & sleep 1s # Somehow go into recovery
 # Go to recovery
 log "Waiting for recovery..."
 adb wait-for-recovery
+sleep 1s
 # Unlock
-action_unlock
+if [ ! -z "$PASSPHRASE" ]; then
+  action_unlock
+fi
 sleep 1s
 adb wait-for-recovery
 # Make a backup

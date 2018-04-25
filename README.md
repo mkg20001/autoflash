@@ -20,4 +20,4 @@ Note that the last 4 items get updated by doing a full re-flash of the system pa
 
 Some people may find it useful for themselves.
 
-Tested on my nexus 5x. More devices likely NOT being added.
+Tested on my nexus 5x & nexus player. More devices that I don't own likely NOT being added.
