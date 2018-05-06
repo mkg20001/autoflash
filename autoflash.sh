@@ -298,8 +298,8 @@ action_flash() {
     _cmd mkdir "$FLASH_TMP"
     twrp wipe system
 
-    twrp wipe cache
-    twrp wipe dalvik
+    #twrp wipe cache
+    #twrp wipe dalvik
 
     if [ ! -z "$GAPPS_CONF" ]; then
       log "Writing custom gapps config..."
@@ -318,8 +318,8 @@ action_flash() {
       _set "$t" "$URL"
     done
 
-    twrp wipe cache
-    twrp wipe dalvik
+    #twrp wipe cache
+    #twrp wipe dalvik
 
     if [ ! -z "$WIPE_FLASH_TMP" ]; then
       log "Clean up $FLASH_TMP..."
