@@ -64,7 +64,7 @@ _ADB=$(which adb)
 _FASTBOOT=$(which fastboot)
 
 adb() {
-  "$_ADB" "$@"
+  "$_ADB" -d "$@"
 }
 
 fastboot() {
@@ -258,6 +258,15 @@ action_backup() {
   log "Started"
 }
 
+action_backup_direct() {
+  BF="$BACKUPS_STORE/$(_adb get-serialno)/$(date +%s).ab"
+  log "Backing up to $BF..."
+  mkdir -p "$(dirname $BF)"
+  # Do a dummy install to "unlock"
+  twrp install dummy > /dev/null 2> /dev/null
+  adb backup -f "$BF" --twrp --compress data
+}
+
 action_vendor() {
   log "Vendor updates:$NEEDS_PATCH_V"
   if echo "$NEEDS_PATCH_V" | grep "factory" > /dev/null; then
@@ -345,7 +354,7 @@ update_prepare gapps latest_gapps
 update_prepare_v factory latest_factory
 update_prepare_v twrp latest_twrp
 
-log "Doing things..."
+log "Trying to boot into recovery..."
 adb reboot recovery & sleep 1s # Somehow go into recovery
 
 # Go to recovery
@@ -359,7 +368,7 @@ fi
 sleep 1s
 adb wait-for-recovery
 # Make a backup
-action_backup
+action_backup_direct
 # Re-flash
 action_flash
 
