@@ -307,9 +307,6 @@ action_flash() {
     _cmd mkdir "$FLASH_TMP"
     twrp wipe system
 
-    #twrp wipe cache
-    #twrp wipe dalvik
-
     if [ ! -z "$GAPPS_CONF" ]; then
       log "Writing custom gapps config..."
       GCONF="/tmp/$$.gapps-conf"
@@ -326,9 +323,6 @@ action_flash() {
       twrp install "$FLASH_TMP/$F"
       _set "$t" "$URL"
     done
-
-    #twrp wipe cache
-    #twrp wipe dalvik
 
     if [ ! -z "$WIPE_FLASH_TMP" ]; then
       log "Clean up $FLASH_TMP..."
@@ -372,11 +366,17 @@ action_backup_direct
 # Re-flash
 action_flash
 
-# Reboot bootloader
-adb reboot bootloader
-# Vendor update
-action_vendor
-# Reboot and enjoy
-fastboot reboot
+if [ ! -z "$NEEDS_PATCH_V" ]; then # If vendor updates, reboot bootloader
+  # Reboot bootloader
+  adb reboot bootloader
+  # Vendor update
+  action_vendor
+
+  # Reboot into system from fastboot
+  fastboot reboot
+else # Else reboot system
+  # Reboot into system from adb
+  adb reboot
+fi
 
 log "DONE!"
