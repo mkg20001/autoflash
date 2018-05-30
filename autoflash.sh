@@ -339,9 +339,7 @@ action_flash() {
 
 # Check for updates
 update_prepare los latest_image
-if [ "$ARCH" != "x86" ]; then
-  update_prepare su latest_addonsu
-fi
+update_prepare su latest_addonsu
 update_prepare fdroid latest_fdroid
 update_prepare gapps latest_gapps
 
