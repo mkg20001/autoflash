@@ -73,6 +73,7 @@ fastboot() {
 
 twrp() {
   adb shell twrp "$@"
+  sleep 5s
 }
 
 _adb() {
@@ -360,7 +361,7 @@ fi
 sleep 1s
 adb wait-for-recovery
 # Make a backup
-action_backup_direct
+[ -z "$NO_BACKUP" ] && action_backup_direct
 # Re-flash
 action_flash
 
