@@ -1,8 +1,10 @@
-# autoflash-nexus-5x
+# autoflash
 
 My tiny update script for my phone
 
-Because doing it manually got annoying
+## Why
+
+### Because doing it manually got annoying
 
 ## What does it do?
 
