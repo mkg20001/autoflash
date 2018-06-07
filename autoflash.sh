@@ -73,7 +73,7 @@ fastboot() {
 
 twrp() {
   adb shell twrp "$@"
-  sleep 5s
+  sleep 2s
 }
 
 _adb() {
@@ -266,6 +266,7 @@ action_backup_direct() {
   # Do a dummy install to "unlock"
   twrp install dummy > /dev/null 2> /dev/null
   adb backup -f "$BF" --twrp --compress data
+  sleep 5s
 }
 
 action_vendor() {
