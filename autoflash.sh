@@ -120,12 +120,16 @@ latest_twrp() {
 
 THINGS=""
 NEEDS_PATCH=""
+NEEDS_PATCH_V=""
 
-update_prepare() {
-  WHAT="$1"
-  THINGS="$THINGS $WHAT"
-  CURRENT=$(_get "$1")
-  LATEST=$($2)
+_update_prepare() {
+  _NEED="$1"
+  _THINGS="$2"
+
+  WHAT="$3"
+  declare $_THINGS="${!_THINGS} $WHAT"
+  CURRENT=$(_get "$3")
+  LATEST=$($4)
 
   CURRENTF=$(basename "$CURRENT")
   LATESTF=$(basename "$LATEST")
@@ -141,50 +145,25 @@ update_prepare() {
       rm -f "$DL_STORE/$CURRENTF.ok"
     fi
 
-    if [ ! -e "$DL_STORE/$LATESTF.ok" ]; then
-      log "DL $LATEST"
-      mkdir -p "$DL_STORE"
-      wget "$LATEST" -O "$DL_STORE/$LATESTF"
-      touch "$DL_STORE/$LATESTF.ok"
-    fi
-
-    log "Add $WHAT to NEEDS_PATCH"
-    NEEDS_PATCH="$NEEDS_PATCH $WHAT"
+    log "Add $WHAT to $_NEED"
+    declare $_NEED="${!_NEED} $WHAT"
     _set "$WHAT-url" "$LATEST"
+  fi
+
+  if [ ! -e "$DL_STORE/$LATESTF.ok" ]; then
+    log "DL $LATEST"
+    mkdir -p "$DL_STORE"
+    wget "$LATEST" -O "$DL_STORE/$LATESTF"
+    touch "$DL_STORE/$LATESTF.ok"
   fi
 }
 
+update_prepare() {
+  _update_prepare "NEEDS_PATCH" "THINGS" "$@"
+}
+
 update_prepare_v() {
-  WHAT="$1"
-  THINGS_V="$THINGS_V $WHAT"
-  CURRENT=$(_get "$1")
-  LATEST=$($2)
-
-  CURRENTF=$(basename "$CURRENT")
-  LATESTF=$(basename "$LATEST")
-
-  log "Current $WHAT: $CURRENTF"
-  log "Latest  $WHAT: $LATESTF"
-  if [ "$CURRENTF" != "$LATESTF" ]; then
-    log "Needs update..."
-
-    if [ ! -z "$CURRENT" ]; then
-      log "RM $CURRENTF"
-      rm -f "$DL_STORE/$CURRENTF"
-      rm -f "$DL_STORE/$CURRENTF.ok"
-    fi
-
-    if [ ! -e "$DL_STORE/$LATESTF.ok" ]; then
-      log "DL $LATEST"
-      mkdir -p "$DL_STORE"
-      wget "$LATEST" -O "$DL_STORE/$LATESTF"
-      touch "$DL_STORE/$LATESTF.ok"
-    fi
-
-    log "Add $WHAT to NEEDS_PATCH_V"
-    NEEDS_PATCH_V="$NEEDS_PATCH_V $WHAT"
-    _set "$WHAT-url" "$LATEST"
-  fi
+  _update_prepare "NEEDS_PATCH_V" "THINGS_V" "$@"
 }
 
 # Tool funcs
