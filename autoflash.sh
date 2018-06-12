@@ -8,6 +8,13 @@ die() {
   echo "$*" 1>&2 && exit 2
 }
 
+contains() {
+  local e match="$1"
+  shift
+  for e; do [[ "$e" == "$match" ]] && return 0; done
+  return 1
+}
+
 [ -z "$DEVICE" ] && die "Set the \$DEVICE env variable"
 
 # Paths
@@ -48,14 +55,14 @@ which fastboot > /dev/null || die "No fastboot binary found"
 # Helper fncs
 
 _get() {
-  cat "$VARS" | grep "$1=" | sed "s|^$1=||"
+  echo $(cat "$VARS" | grep "$1=" | sed "s|^$1=||")
 }
 
 _set() {
   touch "$VARS"
   PRE=$(cat "$VARS" | grep -v "^$1=" || echo)
   echo "$PRE
-$1=$2" > "$VARS"
+$1=$2" | sort > "$VARS"
 }
 
 # ADB helpers
@@ -127,7 +134,7 @@ _update_prepare() {
   _THINGS="$2"
 
   WHAT="$3"
-  declare $_THINGS="${!_THINGS} $WHAT"
+  eval "$_THINGS='${!_THINGS} $WHAT'"
   CURRENT=$(_get "$3")
   LATEST=$($4)
 
@@ -146,7 +153,7 @@ _update_prepare() {
     fi
 
     log "Add $WHAT to $_NEED"
-    declare $_NEED="${!_NEED} $WHAT"
+    eval "$_NEED='${!_NEED} $WHAT'"
     _set "$WHAT-url" "$LATEST"
   fi
 
@@ -271,6 +278,7 @@ action_vendor() {
     rm -rf "$TMP"
     _set factory "$FA_URL"
   fi
+
   if echo "$NEEDS_PATCH_V" | grep "twrp" > /dev/null; then
     log "Patching twrp..."
     TW_URL=$(_get twrp-url)
@@ -284,9 +292,35 @@ action_vendor() {
 action_flash() {
   if [ ! -z "$NEEDS_PATCH" ]; then
     log "Flashing to update$NEEDS_PATCH..."
-    _cmd rm -rf "$FLASH_TMP"
-    _cmd mkdir "$FLASH_TMP"
-    twrp wipe system
+    _cmd mkdir -p "$FLASH_TMP"
+
+    FILES=$(_sh "find" "$FLASH_TMP/" "-type" "f")
+    FILES=$(echo $FILES)
+    FILES=($FILES) # turn into array
+
+    KEEP_FILES=()
+    THING_FILES=()
+
+    for t in $THINGS; do
+      URL=$(_get "$t-url")
+      F=$(basename "$URL")
+      KEEP_FILES=("${KEEP_FILES[@]}" "$FLASH_TMP/$F")
+      THING_FILES=("${THING_FILES[@]}" "$F")
+    done
+
+    for f in "${FILES[@]}"; do # remove unneeded files
+      if ! contains "$f" "${KEEP_FILES[@]}"; then
+        echo "RM $f"
+        _cmd rm -f "$f"
+      fi
+    done
+
+    for f in "${THING_FILES[@]}"; do # push missing
+      if ! contains "$FLASH_TMP/$f" "${FILES[@]}"; then
+        echo "PUSH $f"
+        adb push "$DL_STORE/$f" "$FLASH_TMP/$f"
+      fi
+    done
 
     if [ ! -z "$GAPPS_CONF" ]; then
       log "Writing custom gapps config..."
@@ -296,11 +330,12 @@ action_flash() {
       rm "$GCONF"
     fi
 
+    twrp wipe system
+
     for t in $THINGS; do
       log "Flash $t..."
       URL=$(_get "$t-url")
       F=$(basename "$URL")
-      adb push "$DL_STORE/$F" "$FLASH_TMP/$F"
       twrp install "$FLASH_TMP/$F"
       _set "$t" "$URL"
     done
