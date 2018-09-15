@@ -160,7 +160,7 @@ _update_prepare() {
   if [ ! -e "$DL_STORE/$LATESTF.ok" ]; then
     log "DL $LATEST"
     mkdir -p "$DL_STORE"
-    wget "$LATEST" -O "$DL_STORE/$LATESTF"
+    wget "$LATEST" -O "$DL_STORE/$LATESTF" --continue
     touch "$DL_STORE/$LATESTF.ok"
   fi
 }
