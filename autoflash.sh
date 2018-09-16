@@ -23,7 +23,12 @@ DATA="$HOME/.autoflash"
 CONF="$DATA/config"
 DEV_CONF="$PWD/$DEVICE.conf"
 DEV_PRIV_CONF="$DATA/$DEVICE.conf"
-PACK_LOCK="/tmp/.AUTOFLASH_PACK_LOCK"
+if [ -z "$ALT_TMP" ]; then
+  TMP="/tmp"
+else
+  TMP="$ALT_TMP"
+fi
+PACK_LOCK="$TMP/.AUTOFLASH_PACK_LOCK"
 
 # Load conf
 
@@ -262,10 +267,17 @@ action_vendor() {
     FA_URL=$(_get factory-url)
     FA=$(basename "$FA_URL")
     TT=$(echo "$FA" | sed "s|.zip||g" | sed -r "s|(.+)-(.+)-.+-.+|\1-\2|g")
+    SHASTART=$(echo "$FA" | sed -r "s|.+-([a-z0-9]+).zip$|\1|g")
     FA="$DL_STORE/$FA"
-    TMP="/tmp/$$.factory"
+    TMP="$TMP/$$.factory"
     mkdir -p "$TMP"
     pushd "$TMP"
+    if [[ "$(sha256sum $FA)" != "$SHASTART"* ]]; then
+      echo "Checksum validation failed!"
+      echo "Expected: $SHASTART..."
+      echo "Got: $(sha256sum $FA)"
+      exit 2
+    fi
     unzip "$FA"
     pushd "$TT"
     bash -ex flash-base.sh
@@ -324,7 +336,7 @@ action_flash() {
 
     if [ ! -z "$GAPPS_CONF" ]; then
       log "Writing custom gapps config..."
-      GCONF="/tmp/$$.gapps-conf"
+      GCONF="$TMP/$$.gapps-conf"
       echo -e "$GAPPS_CONF" > "$GCONF"
       adb push "$GCONF" "$FLASH_TMP/.gapps-config"
       rm "$GCONF"
