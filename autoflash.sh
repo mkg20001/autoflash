@@ -162,12 +162,11 @@ _update_prepare() {
     _set "$WHAT-url" "$LATEST"
   fi
 
-  if [ ! -e "$DL_STORE/$LATESTF.ok" ]; then
+  while [ ! -e "$DL_STORE/$LATESTF.ok" ]; do
     log "DL $LATEST"
     mkdir -p "$DL_STORE"
-    wget "$LATEST" -O "$DL_STORE/$LATESTF" --continue
-    touch "$DL_STORE/$LATESTF.ok"
-  fi
+    (wget "$LATEST" -O "$DL_STORE/$LATESTF" --continue && touch "$DL_STORE/$LATESTF.ok") || (log "Download failed. Trying again in 10s..." && sleep 10s)
+  done
 }
 
 update_prepare() {
