@@ -150,19 +150,25 @@ lastest_magisk() {
 create_magisk_manager_zip() {
   LATEST_MANAGER=$(curl -s "https://api.github.com/repos/topjohnwu/Magisk/releases?per_page=100" | jq -r "map(select(.name | contains(\"Magisk Manager\")))[0].assets[] | .browser_download_url")
   CUR_MANAGER=$(_get mgmg)
-  MG_SAFE=$(echo "$LATEST_MANAGER" | sed -r "s|[^a-zA-Z0-9]|.|g")
-  MG_ZIP="$DL_STORE/$MG_SAFE"
+  MG_SAFE=$(basename "$LATEST_MANAGER" | sed -r "s|[^a-zA-Z0-9]|.|g")
+  MG_ZIP="$DL_STORE/magisk_manager_zip.$MG_SAFE.zip"
   if [ "$CUR_MANAGER" != "$LATEST_MANAGER" ]; then
+    log "MAGISK Update Magisk Manger: $LATEST_MANAGER"
+    rm -f $DL_STORE/magisk_manager_zip.*
     _dl "$LATEST_MANAGER"
     T="$TMP/magisk"
     rm -rf "$T"
     cp -rpv "$SELF/magisk-zip" "$T"
     mv -v "$DL_STORE/$URLF" "$T/MagiskManager.apk"
+    rm "$DL_STORE/$URLF.ok"
     pushd "$T"
     zip ../mgmg.zip -r .
-    popd "$T"
+    popd
     mv -v "$TMP/mgmg.zip" "$MG_ZIP"
+    rm -rf "$T"
     touch "$MG_ZIP.ok"
+    log "MAGISK OK"
+    _set mgmg "$LATEST_MANAGER"
   fi
 }
 
