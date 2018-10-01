@@ -2,6 +2,10 @@
 
 My tiny update script for my phone
 
+## Magisk
+
+To enable magisk, add `MAGISK=true` to `$HOME/.autoflash/$DEVICE.conf`
+
 ## Why
 
 ### Because doing it manually got annoying

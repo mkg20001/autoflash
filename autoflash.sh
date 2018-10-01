@@ -19,6 +19,7 @@ contains() {
 
 # Paths
 
+SELF=$(dirname $(readlink -f "$0"))
 DATA="$HOME/.autoflash"
 CONF="$DATA/config"
 DEV_CONF="$PWD/$DEVICE.conf"
@@ -31,6 +32,8 @@ fi
 PACK_LOCK="$TMP/.AUTOFLASH_PACK_LOCK"
 
 # Load conf
+
+MAGISK=false
 
 mkdir -p "$DATA"
 touch "$CONF"
@@ -104,6 +107,16 @@ log() {
   echo "$(date +%s): $*"
 }
 
+_dl() {
+  URL="$1"
+  URLF=$(basename "$URL")
+  while [ ! -e "$DL_STORE/$URLF.ok" ]; do
+    log "DL $URL"
+    mkdir -p "$DL_STORE"
+    (wget "$URL" -O "$DL_STORE/$URLF" --continue && touch "$DL_STORE/$URLF.ok") || (log "Download failed. Trying again in 10s..." && sleep 10s)
+  done
+}
+
 # Stuff to get updates
 
 latest_image() {
@@ -128,6 +141,33 @@ latest_factory() {
 
 latest_twrp() {
   echo "$PRIVATE_MIRROR/twrp-3.2.2-0-$CODE_NAME.img" # echo "https://eu.dl.twrp.me/bullhead/twrp-3.2.2-0-bullhead.img" # from https://eu.dl.twrp.me/bullhead/
+}
+
+lastest_magisk() {
+  curl -s "https://api.github.com/repos/topjohnwu/Magisk/releases?per_page=100" | jq -r "map(select(.name | contains(\"Magisk v\")))[0].assets[] | .browser_download_url" | grep -v uninstaller
+}
+
+create_magisk_manager_zip() {
+  LATEST_MANAGER=$(curl -s "https://api.github.com/repos/topjohnwu/Magisk/releases?per_page=100" | jq -r "map(select(.name | contains(\"Magisk Manager\")))[0].assets[] | .browser_download_url")
+  CUR_MANAGER=$(_get mgmg)
+  MG_SAFE=$(echo "$LATEST_MANAGER" | sed -r "s|[^a-zA-Z0-9]|.|g")
+  MG_ZIP="$DL_STORE/$MG_SAFE"
+  if [ "$CUR_MANAGER" != "$LATEST_MANAGER" ]; then
+    _dl "$LATEST_MANAGER"
+    T="$TMP/magisk"
+    rm -rf "$T"
+    cp -rpv "$SELF/magisk-zip" "$T"
+    mv -v "$DL_STORE/$URLF" "$T/MagiskManager.apk"
+    pushd "$T"
+    zip ../mgmg.zip -r .
+    popd "$T"
+    mv -v "$TMP/mgmg.zip" "$MG_ZIP"
+    touch "$MG_ZIP.ok"
+  fi
+}
+
+latest_magisk_manager() {
+  echo "http://$MG_ZIP"
 }
 
 THINGS=""
@@ -162,11 +202,7 @@ _update_prepare() {
     _set "$WHAT-url" "$LATEST"
   fi
 
-  while [ ! -e "$DL_STORE/$LATESTF.ok" ]; do
-    log "DL $LATEST"
-    mkdir -p "$DL_STORE"
-    (wget "$LATEST" -O "$DL_STORE/$LATESTF" --continue && touch "$DL_STORE/$LATESTF.ok") || (log "Download failed. Trying again in 10s..." && sleep 10s)
-  done
+  _dl "$LATEST"
 }
 
 update_prepare() {
@@ -366,7 +402,13 @@ action_flash() {
 
 # Check for updates
 update_prepare los latest_image
-update_prepare su latest_addonsu
+if $MAGISK; then
+  update_prepare magisk lastest_magisk
+  create_magisk_manager_zip
+  update_prepare magisk_manager latest_magisk_manager
+else
+  update_prepare su latest_addonsu
+fi
 update_prepare fdroid latest_fdroid
 update_prepare gapps latest_gapps
 
