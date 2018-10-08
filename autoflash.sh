@@ -113,7 +113,12 @@ _dl() {
   while [ ! -e "$DL_STORE/$URLF.ok" ]; do
     log "DL $URL"
     mkdir -p "$DL_STORE"
-    (wget "$URL" -O "$DL_STORE/$URLF" --continue && touch "$DL_STORE/$URLF.ok") || (log "Download failed. Trying again in 10s..." && sleep 10s)
+    if echo "$URL" | grep "twrp-" > /dev/null 2> /dev/null; then
+      TWH=(--header='User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:63.0) Gecko/20100101 Firefox/63.0' --header='Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' --header="Referer: $URL.html" --header='DNT: 1' --header='Connection: keep-alive' --header='Upgrade-Insecure-Requests: 1')
+      (wget "$URL" "${TWH[@]}" -O "$DL_STORE/$URLF" --continue && touch "$DL_STORE/$URLF.ok") || (log "Download failed. Trying again in 10s..." && sleep 10s)
+    else
+      (wget "$URL" -O "$DL_STORE/$URLF" --continue && touch "$DL_STORE/$URLF.ok") || (log "Download failed. Trying again in 10s..." && sleep 10s)
+    fi
   done
 }
 
@@ -140,7 +145,8 @@ latest_factory() {
 }
 
 latest_twrp() {
-  echo "$PRIVATE_MIRROR/twrp-3.2.3-0-$CODE_NAME.img" # echo "https://eu.dl.twrp.me/bullhead/twrp-3.2.2-0-bullhead.img" # from https://eu.dl.twrp.me/bullhead/
+  VER=$(curl -s "https://eu.dl.twrp.me/$DEVICE/" | grep .img | grep -o ">twrp-.*img" | grep -o "twrp-.*" | sort -r | head -n 1)
+  echo "https://eu.dl.twrp.me/$DEVICE/$VER"
 }
 
 lastest_magisk() {
@@ -152,7 +158,7 @@ create_magisk_manager_zip() {
   CUR_MANAGER=$(_get mgmg)
   MG_SAFE=$(basename "$LATEST_MANAGER" | sed -r "s|[^a-zA-Z0-9]|.|g")
   MG_ZIP="$DL_STORE/magisk_manager_zip.$MG_SAFE.zip"
-  if [ "$CUR_MANAGER" != "$LATEST_MANAGER" ] || [ -e "$MG_ZIP" ]; then
+  if [ "$CUR_MANAGER" != "$LATEST_MANAGER" ] || [ ! -e "$MG_ZIP" ]; then
     log "MAGISK Update Magisk Manger: $LATEST_MANAGER"
     rm -f $DL_STORE/magisk_manager_zip.*
     _dl "$LATEST_MANAGER"
