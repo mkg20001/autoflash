@@ -152,7 +152,7 @@ create_magisk_manager_zip() {
   CUR_MANAGER=$(_get mgmg)
   MG_SAFE=$(basename "$LATEST_MANAGER" | sed -r "s|[^a-zA-Z0-9]|.|g")
   MG_ZIP="$DL_STORE/magisk_manager_zip.$MG_SAFE.zip"
-  if [ "$CUR_MANAGER" != "$LATEST_MANAGER" ]; then
+  if [ "$CUR_MANAGER" != "$LATEST_MANAGER" ] || [ -e "$MG_ZIP" ]; then
     log "MAGISK Update Magisk Manger: $LATEST_MANAGER"
     rm -f $DL_STORE/magisk_manager_zip.*
     _dl "$LATEST_MANAGER"
