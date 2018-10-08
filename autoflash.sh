@@ -140,7 +140,7 @@ latest_factory() {
 }
 
 latest_twrp() {
-  echo "$PRIVATE_MIRROR/twrp-3.2.2-0-$CODE_NAME.img" # echo "https://eu.dl.twrp.me/bullhead/twrp-3.2.2-0-bullhead.img" # from https://eu.dl.twrp.me/bullhead/
+  echo "$PRIVATE_MIRROR/twrp-3.2.3-0-$CODE_NAME.img" # echo "https://eu.dl.twrp.me/bullhead/twrp-3.2.2-0-bullhead.img" # from https://eu.dl.twrp.me/bullhead/
 }
 
 lastest_magisk() {
