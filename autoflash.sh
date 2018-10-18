@@ -88,7 +88,7 @@ fastboot() {
 
 twrp() {
   adb shell twrp "$@"
-  sleep 2s
+  sleep 10s
 }
 
 _adb() {
@@ -389,6 +389,15 @@ action_flash() {
       rm "$GCONF"
     fi
 
+    if [ ! -z "$BAKA" ]; then
+      echo -n "$(log Backup running...)"
+      while [ -e "/proc/$BAKA" ]; do
+        echo -n .
+        sleep 5s
+      done
+      echo
+    fi
+
     twrp wipe system
 
     for t in $THINGS; do
@@ -441,7 +450,12 @@ fi
 sleep 1s
 adb wait-for-recovery
 # Make a backup
-[ -z "$NO_BACKUP" ] && action_backup_direct
+if [ -z "$SKIP_BACKUP" ]; then
+  action_backup_direct &
+  BAKA=$!
+  sleep 10s
+fi
+
 # Re-flash
 action_flash
 
