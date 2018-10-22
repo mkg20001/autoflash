@@ -419,42 +419,52 @@ action_flash() {
   fi
 }
 
+action_pull_updates() {
+  update_prepare los latest_image
+  if $MAGISK; then
+    update_prepare magisk lastest_magisk
+    create_magisk_manager_zip
+    update_prepare magisk_manager latest_magisk_manager
+  else
+    update_prepare su latest_addonsu
+  fi
+  update_prepare fdroid latest_fdroid
+  update_prepare gapps latest_gapps
+
+  update_prepare_v factory latest_factory
+  update_prepare_v twrp latest_twrp
+}
+
 # Final code
 
-# Check for updates
-update_prepare los latest_image
-if $MAGISK; then
-  update_prepare magisk lastest_magisk
-  create_magisk_manager_zip
-  update_prepare magisk_manager latest_magisk_manager
-else
-  update_prepare su latest_addonsu
+if [ ! -z "$PULL_ONLY" ]; then
+  log "Pulling updates..."
+  action_pull_updates
+  exit
 fi
-update_prepare fdroid latest_fdroid
-update_prepare gapps latest_gapps
-
-update_prepare_v factory latest_factory
-update_prepare_v twrp latest_twrp
 
 log "Trying to boot into recovery..."
 adb reboot recovery & sleep 1s # Somehow go into recovery
 
 # Go to recovery
 log "Waiting for recovery..."
-adb wait-for-recovery
+adb "wait-for-recovery"
 sleep 1s
 # Unlock
 if [ ! -z "$PASSPHRASE" ]; then
   action_unlock
 fi
 sleep 1s
-adb wait-for-recovery
+adb "wait-for-recovery"
 # Make a backup
 if [ -z "$SKIP_BACKUP" ]; then
   action_backup_direct &
   BAKA=$!
   sleep 10s
 fi
+
+# Check for updates
+action_pull_updates
 
 # Re-flash
 action_flash
