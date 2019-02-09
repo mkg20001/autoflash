@@ -140,7 +140,7 @@ latest_fdroid() {
   curl -s https://f-droid.org/packages/org.fdroid.fdroid.privileged.ota/ | grep -o "https.*.zip" | sort -r | head -n 1
 }
 
-latest_factory() {
+latest_factory_google() {
   curl -s "https://developers.google.com/android/images" | grep "https://dl.google.com/dl/android/aosp/$CODE_NAME" | tail -n 1 | sed -r "s|.*\"(.+)\".*|\1|g"
 }
 
@@ -309,8 +309,9 @@ action_backup_direct() {
 
 action_vendor() {
   log "Vendor updates:$NEEDS_PATCH_V"
-  if echo "$NEEDS_PATCH_V" | grep "factory" > /dev/null; then
-    log "Patching factory..."
+
+  if echo "$NEEDS_PATCH_V" | grep "factory_google" > /dev/null; then
+    log "Patching factory_google..."
     FA_URL=$(_get factory-url)
     FA=$(basename "$FA_URL")
     TT=$(echo "$FA" | sed "s|.zip||g" | sed -r "s|(.+)-(.+)-.+-.+|\1-\2|g")
@@ -431,8 +432,15 @@ action_pull_updates() {
   update_prepare fdroid latest_fdroid
   update_prepare gapps latest_gapps
 
-  update_prepare_v factory latest_factory
-  update_prepare_v twrp latest_twrp
+  case "$VENDOR_MODE" in
+    google)
+      update_prepare_v factory_google latest_factory_google
+      update_prepare_v twrp latest_twrp
+      ;;
+    oneplus)
+      update_prepare_v twrp latest_twrp
+      ;;
+  esac
 }
 
 # Final code
