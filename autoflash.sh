@@ -25,9 +25,9 @@ CONF="$DATA/config"
 DEV_CONF="$PWD/$DEVICE.conf"
 DEV_PRIV_CONF="$DATA/$DEVICE.conf"
 if [ -z "$ALT_TMP" ]; then
-  TMP="/tmp"
+  TMP="/tmp/autoflash-$DEVICE"
 else
-  TMP="$ALT_TMP"
+  TMP="$ALT_TMP/autoflash-$DEVICE"
 fi
 PACK_LOCK="$TMP/.AUTOFLASH_PACK_LOCK"
 
@@ -79,11 +79,19 @@ _ADB=$(which adb)
 _FASTBOOT=$(which fastboot)
 
 adb() {
-  "$_ADB" -d "$@"
+  if [ ! -z "$ANDROID_SERIAL" ]; then
+    "$_ADB" -s "$ANDROID_SERIAL" -d "$@"
+  else
+    "$_ADB" -d "$@"
+  fi
 }
 
 fastboot() {
-  "$_FASTBOOT" "$@"
+  if [ ! -z "$ANDROID_SERIAL" ]; then
+    "$_FASTBOOT" -s "$ANDROID_SERIAL" "$@"
+  else
+    "$_FASTBOOT" "$@"
+  fi
 }
 
 twrp() {
@@ -491,3 +499,5 @@ else # Else reboot system
 fi
 
 log "DONE!"
+
+rm -rfv "$TMP"
