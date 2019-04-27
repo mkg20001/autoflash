@@ -172,6 +172,7 @@ create_magisk_manager_zip() {
     _dl "$LATEST_MANAGER"
     T="$TMP/magisk"
     rm -rf "$T"
+    mkdir -p "$(dirname $T)"
     cp -rpv "$SELF/magisk-zip" "$T"
     mv -v "$DL_STORE/$URLF" "$T/MagiskManager.apk"
     rm "$DL_STORE/$URLF.ok"
@@ -292,8 +293,17 @@ pack_all() {
 # And finally: the actual actions
 
 action_unlock() {
-  log "Unlocking..."
-  twrp decrypt "$PASSPHRASE"
+  i=0
+  while echo "$OUT" | grep "Failed to decrypt" > /dev/null || [ -z "$OUT" ]; do
+    i=$(( $i + 1 ))
+    log "Unlocking ($i/3)..."
+    OUT=$(twrp decrypt "$PASSPHRASE")
+    echo "$OUT"
+    if [ "$i" == "3" ]; then
+      log "ERROR: FAILED TO UNLCOK" 2>&1
+      exit 2
+    fi
+  done
 }
 
 action_backup() {
