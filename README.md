@@ -42,3 +42,13 @@ Feel free to add your own devices via PRs, but don't create device request issue
 ## Why publish?
 
 Some people may find it useful for themselves.
+
+# FAQ
+
+## Why does it attempt to unlock the device multiple times?
+
+Sometimes a device won't properly unlock on first try (such as the bacon). Therefore unlocking will be tried 3 times before really giving up.
+
+## Why doesn't it detect my device immediatly?
+
+Sometimes the adb server won't detect a device. This can be usually solved by re-starting the adb server on the host computer as root with `adb kill-server && sudo adb devices`. No idea why.
