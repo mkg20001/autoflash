@@ -417,7 +417,7 @@ action_flash() {
       echo
     fi
 
-    twrp wipe system
+    twrp wipe /system
 
     for t in $THINGS; do
       log "Flash $t..."
