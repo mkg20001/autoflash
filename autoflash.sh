@@ -195,7 +195,7 @@ create_aurora_services_zip() {
   LATEST_SERVICES=$(curl -s https://gitlab.com/AuroraOSS/AuroraServices/-/tags | grep -o "/AuroraOSS/.*apk" | head -n 1)
   CUR_SERVICES=$(_get aserv)
   AS_SAFE=$(basename "$LATEST_SERVICES" | sed -r "s|[^a-zA-Z0-9]|.|g")
-  AS_ZIP="$DL_STORE/aurora_services_zip.$MG_SAFE.zip"
+  AS_ZIP="$DL_STORE/aurora_services_zip.$AS_SAFE.zip"
   if [ "$CUR_SERVICES" != "$LATEST_SERVICES" ] || [ ! -e "$AS_ZIP" ]; then
     log "AURORA Update Aurora Services: $LATEST_SERVICES"
     rm -f $DL_STORE/aurora_services_zip.*
