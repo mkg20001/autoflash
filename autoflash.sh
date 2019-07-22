@@ -191,6 +191,36 @@ latest_magisk_manager() {
   echo "http://$MG_ZIP"
 }
 
+create_aurora_services_zip() {
+  LATEST_SERVICES=$(curl -s https://gitlab.com/AuroraOSS/AuroraServices/-/tags | grep -o "/AuroraOSS/.*apk" | head -n 1)
+  CUR_SERVICES=$(_get aserv)
+  AS_SAFE=$(basename "$LATEST_SERVICES" | sed -r "s|[^a-zA-Z0-9]|.|g")
+  AS_ZIP="$DL_STORE/aurora_services_zip.$MG_SAFE.zip"
+  if [ "$CUR_SERVICES" != "$LATEST_SERVICES" ] || [ ! -e "$AS_ZIP" ]; then
+    log "AURORA Update Aurora Services: $LATEST_SERVICES"
+    rm -f $DL_STORE/aurora_services_zip.*
+    _dl "$LATEST_SERVICES"
+    T="$TMP/services"
+    rm -rf "$T"
+    mkdir -p "$(dirname $T)"
+    cp -rpv "$SELF/services-zip" "$T"
+    mv -v "$DL_STORE/$URLF" "$T/AuroraServices.apk"
+    rm "$DL_STORE/$URLF.ok"
+    pushd "$T"
+    zip ../aserv.zip -r .
+    popd
+    mv -v "$TMP/aserv.zip" "$AS_ZIP"
+    rm -rf "$T"
+    touch "$AS_ZIP.ok"
+    log "AURORA OK"
+    _set aserv "$LATEST_SERVICES"
+  fi
+}
+
+latest_aurora_services() {
+  echo "http://$AS_ZIP"
+}
+
 THINGS=""
 NEEDS_PATCH=""
 NEEDS_PATCH_V=""
@@ -447,6 +477,10 @@ action_pull_updates() {
   else
     update_prepare su latest_addonsu
   fi
+
+  create_aurora_services_zip
+  update_prepare aurora_services latest_aurora_services
+
   update_prepare fdroid latest_fdroid
   update_prepare gapps latest_gapps
 
