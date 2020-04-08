@@ -506,6 +506,16 @@ if [ ! -z "$PULL_ONLY" ]; then
   exit
 fi
 
+if [ ! -z "$FIRST_INSTALL" ]; then
+  # Check for updates
+  action_pull_updates
+
+  # Vendor update
+  action_vendor
+
+  exit
+fi
+
 log "Trying to boot into recovery..."
 adb reboot recovery & sleep 1s # Somehow go into recovery
 
