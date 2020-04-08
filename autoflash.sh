@@ -137,7 +137,9 @@ latest_image() {
 }
 
 latest_gapps() {
-  curl -s "https://api.github.com/repos/opengapps/$ARCH/releases/latest?per_page=100" | jq -c ".assets[] | [ .browser_download_url ]" | grep "$ARCH-$GAPPS_FLAV" | grep ".zip\"\]" | jq -c ".[0]" | sed "s|\"||g"
+  G_VERSION=$(echo "$GAPPS_FLAV" | sed -r "s|-.+||g")
+  G_VARIANT=$(echo "$GAPPS_FLAV" | sed -r "s|.+-||g")
+  curl -s https://api.opengapps.org/list | jq -r ".archs.$ARCH.apis[\"$G_VERSION\"].variants[] | select(.name == \"$G_VARIANT\") | .zip"
 }
 
 latest_addonsu() {
@@ -192,7 +194,8 @@ latest_magisk_manager() {
 }
 
 create_aurora_services_zip() {
-  LATEST_SERVICES=$(curl -s https://gitlab.com/AuroraOSS/AuroraServices/-/tags | grep -o "/AuroraOSS/.*apk" | head -n 1)
+  LATEST_SERVICES=$(curl -s https://gitlab.com/AuroraOSS/AuroraServices/-/tags | grep -o "/AuroraOSS/[a-z0-9A-Z/.-]*apk" | head -n 1)
+  LATEST_SERVICES="https://gitlab.com$LATEST_SERVICES"
   CUR_SERVICES=$(_get aserv)
   AS_SAFE=$(basename "$LATEST_SERVICES" | sed -r "s|[^a-zA-Z0-9]|.|g")
   AS_ZIP="$DL_STORE/aurora_services_zip.$AS_SAFE.zip"
